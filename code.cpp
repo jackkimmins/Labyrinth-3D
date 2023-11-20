@@ -1,6 +1,8 @@
 #include <SDL.h>
 #include <emscripten.h>
 #include <cmath>
+#include <chrono>
+#include <iostream>
 
 #define WIDTH 1920
 #define HEIGHT 1080
@@ -31,11 +33,15 @@ double dirX = -1.0, dirY = 0.0; // initial direction vector
 double planeX = 0.0;
 double planeY = tan(FOV * 0.5 * M_PI / 180.0);
 
-double moveSpeed = 0.005;
-double rotSpeed = 0.008;
+double moveSpeed = 0.0015;
+double rotSpeed = 0.0014;
 
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
+
+// Timing for deltatime
+double lastUpdate = clock();
+double deltaTime = (clock() - lastUpdate) / 1000.0f; 
 
 void Render()
 {
@@ -134,6 +140,8 @@ void Update()
 {
     const Uint8* state = SDL_GetKeyboardState(NULL);
 
+
+
     SDL_Event e;
     while (SDL_PollEvent(&e))
     {
@@ -147,31 +155,31 @@ void Update()
 
     if (state[SDL_SCANCODE_UP] || state[SDL_SCANCODE_W])
     {
-        posX += dirX * moveSpeed;
-        posY += dirY * moveSpeed;
+        posX += dirX * moveSpeed * deltaTime;
+        posY += dirY * moveSpeed * deltaTime;
     }
     if (state[SDL_SCANCODE_DOWN] || state[SDL_SCANCODE_S])
     {
-        posX -= dirX * moveSpeed;
-        posY -= dirY * moveSpeed;
+        posX -= dirX * moveSpeed * deltaTime;
+        posY -= dirY * moveSpeed * deltaTime;
     }
     if (state[SDL_SCANCODE_RIGHT] || state[SDL_SCANCODE_D])
     {
         double oldDirX = dirX;
-        dirX = dirX * cos(-rotSpeed) - dirY * sin(-rotSpeed);
-        dirY = oldDirX * sin(-rotSpeed) + dirY * cos(-rotSpeed);
+        dirX = dirX * cos(-rotSpeed * deltaTime) - dirY * sin(-rotSpeed * deltaTime);
+        dirY = oldDirX * sin(-rotSpeed * deltaTime) + dirY * cos(-rotSpeed * deltaTime);
         double oldPlaneX = planeX;
-        planeX = planeX * cos(-rotSpeed) - planeY * sin(-rotSpeed);
-        planeY = oldPlaneX * sin(-rotSpeed) + planeY * cos(-rotSpeed);
+        planeX = planeX * cos(-rotSpeed * deltaTime) - planeY * sin(-rotSpeed * deltaTime);
+        planeY = oldPlaneX * sin(-rotSpeed * deltaTime) + planeY * cos(-rotSpeed * deltaTime);
     }
     if (state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_A])
     {
         double oldDirX = dirX;
-        dirX = dirX * cos(rotSpeed) - dirY * sin(rotSpeed);
-        dirY = oldDirX * sin(rotSpeed) + dirY * cos(rotSpeed);
+        dirX = dirX * cos(rotSpeed * deltaTime) - dirY * sin(rotSpeed * deltaTime);
+        dirY = oldDirX * sin(rotSpeed * deltaTime) + dirY * cos(rotSpeed * deltaTime);
         double oldPlaneX = planeX;
-        planeX = planeX * cos(rotSpeed) - planeY * sin(rotSpeed);
-        planeY = oldPlaneX * sin(rotSpeed) + planeY * cos(rotSpeed);
+        planeX = planeX * cos(rotSpeed * deltaTime) - planeY * sin(rotSpeed * deltaTime);
+        planeY = oldPlaneX * sin(rotSpeed * deltaTime) + planeY * cos(rotSpeed * deltaTime);
     }
     if (state[SDL_SCANCODE_SPACE] && !isJumping)
     {
@@ -180,8 +188,8 @@ void Update()
     }
 
     // Apply gravity and vertical speed
-    playerZ += verticalSpeed;
-    verticalSpeed += GRAVITY;
+    playerZ += verticalSpeed * deltaTime;
+    verticalSpeed += GRAVITY * deltaTime;
 
     // Ensure the player lands back on the ground
     if (playerZ <= 0.0)
@@ -195,6 +203,8 @@ void Update()
 
 void mainloop()
 {
+    deltaTime = (clock() - lastUpdate) / 1000.0f;
+    lastUpdate = clock();
     Update();
     Render();
 }
